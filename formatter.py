@@ -17,17 +17,36 @@ def format_uptime(uptime):
     return " ".join(parts)
 
 
-def format_top_processes(processes):
+def format_process_chunks(processes, max_chars=3500):
     if not processes:
-        return "🧠 *Top processi*: dati in fase di calcolo"
+        return ["🧠 *Tutti i processi*: dati in fase di calcolo"]
 
-    lines = ["🧠 *Top processi*"]
-    for i, proc in enumerate(processes, start=1):
-        lines.append(
-            f"{i}. {proc['name']} — CPU {proc['cpu_percent']}% / "
-            f"RAM {proc['ram_percent']}% ({proc['ram_mb']} MB)"
-        )
-    return "\n".join(lines)
+    lines = [
+        f"{i}. {proc['name']} — CPU {proc['cpu_percent']}% / "
+        f"RAM {proc['ram_percent']}% ({proc['ram_mb']} MB)"
+        for i, proc in enumerate(processes, start=1)
+    ]
+
+    raw_chunks = []
+    current = []
+    current_len = 0
+    for line in lines:
+        if current and current_len + len(line) + 1 > max_chars:
+            raw_chunks.append(current)
+            current = []
+            current_len = 0
+        current.append(line)
+        current_len += len(line) + 1
+    if current:
+        raw_chunks.append(current)
+
+    total = len(raw_chunks)
+    chunks = []
+    for i, chunk_lines in enumerate(raw_chunks, start=1):
+        header = "🧠 *Tutti i processi*" if total == 1 else f"🧠 *Tutti i processi (parte {i}/{total})*"
+        chunks.append(header + "\n" + "\n".join(chunk_lines))
+
+    return chunks
 
 
 def format_status_report(metrics):
@@ -35,15 +54,13 @@ def format_status_report(metrics):
     ram = metrics["ram"]
     disk = metrics["disk"]
     uptime = metrics["uptime"]
-    top_processes = metrics["top_processes"]
 
     message = (
         f"📊 *Stato VPS*\n\n"
         f"{_status_emoji(cpu)} *CPU*: {cpu}%\n"
         f"{_status_emoji(ram['percent'])} *RAM*: {ram['used_gb']} / {ram['total_gb']} GB ({ram['percent']}%)\n"
         f"{_status_emoji(disk['percent'])} *Disco*: {disk['used_gb']} / {disk['total_gb']} GB ({disk['percent']}%)\n"
-        f"⏱ *Uptime*: {format_uptime(uptime)}\n\n"
-        f"{format_top_processes(top_processes)}"
+        f"⏱ *Uptime*: {format_uptime(uptime)}"
     )
 
     return message
@@ -51,4 +68,10 @@ def format_status_report(metrics):
 
 if __name__ == "__main__":
     from metrics import get_all_metrics
-    print(format_status_report(get_all_metrics()))
+
+    metrics = get_all_metrics()
+    print(format_status_report(metrics))
+    print()
+    for chunk in format_process_chunks(metrics["processes"]):
+        print(chunk)
+        print(f"--- ({len(chunk)} caratteri) ---")

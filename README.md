@@ -1,11 +1,11 @@
 # VPS-BOT
 
-Bot Telegram per monitorare lo stato di una VPS: CPU, RAM, disco, uptime e top processi per consumo, con comando `/status` on-demand e alert automatici quando le risorse superano soglie di warning o critiche.
+Bot Telegram per monitorare lo stato di una VPS: CPU, RAM, disco, uptime e l'elenco completo dei processi attivi, con comando `/status` on-demand e alert automatici quando le risorse superano soglie di warning o critiche.
 
 ## Funzionalità
 
-- **`/status`** — restituisce uno snapshot immediato di CPU, RAM, disco, uptime e dei processi che stanno consumando di più (CPU + RAM)
-- **Alert automatici** — controllo periodico in background; se una metrica supera una soglia (warning o critical) arriva una notifica con lo stato completo di tutte le metriche
+- **`/status`** — restituisce uno snapshot immediato di CPU, RAM, disco, uptime e l'elenco di tutti i processi attivi ordinati per consumo (CPU + RAM); se l'elenco è lungo viene inviato su più messaggi consecutivi (limite di caratteri di Telegram)
+- **Alert automatici** — controllo periodico in background; se una metrica supera una soglia (warning o critical) arriva una notifica con lo stato completo di tutte le metriche e l'elenco dei processi
 - **Nessuna porta esposta** — funziona in long polling, non richiede webhook né porte aperte verso internet
 
 ## Requisiti
@@ -37,7 +37,7 @@ Per ottenere il `chat_id`:
 2. Apri nel browser: `https://api.telegram.org/bot<TUO_TOKEN>/getUpdates`
 3. Cerca il campo `"chat":{"id": ...}` nella risposta JSON
 
-Le soglie di warning/critical per CPU, RAM e disco, l'intervallo di controllo e il numero di processi mostrati nel Top processi (`TOP_PROCESSES_COUNT`) si configurano in `config.py`.
+Le soglie di warning/critical per CPU, RAM e disco, oltre all'intervallo di controllo, si configurano in `config.py`.
 
 ## Avvio
 

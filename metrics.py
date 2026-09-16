@@ -1,8 +1,6 @@
 import time
 import psutil
 
-import config
-
 _process_registry = {}
 
 
@@ -44,10 +42,7 @@ def get_uptime():
     }
 
 
-def get_top_processes(limit=None):
-    if limit is None:
-        limit = config.TOP_PROCESSES_COUNT
-
+def get_all_processes():
     current_pids = set(psutil.pids())
     for pid in list(_process_registry.keys()):
         if pid not in current_pids:
@@ -79,7 +74,7 @@ def get_top_processes(limit=None):
             continue
 
     results.sort(key=lambda p: p["cpu_percent"] + p["ram_percent"], reverse=True)
-    return results[:limit]
+    return results
 
 
 def get_all_metrics():
@@ -88,7 +83,7 @@ def get_all_metrics():
         "ram": get_ram_usage(),
         "disk": get_disk_usage(),
         "uptime": get_uptime(),
-        "top_processes": get_top_processes(),
+        "processes": get_all_processes(),
     }
 
 

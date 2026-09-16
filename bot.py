@@ -5,7 +5,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 
 import config
 from metrics import get_all_metrics
-from formatter import format_status_report
+from formatter import format_status_report, format_process_chunks
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -28,6 +28,9 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     metrics = get_all_metrics()
     message = format_status_report(metrics)
     await update.message.reply_text(message, parse_mode="Markdown")
+
+    for chunk in format_process_chunks(metrics["processes"]):
+        await update.message.reply_text(chunk, parse_mode="Markdown")
 
     try:
         await update.message.delete()
@@ -86,6 +89,13 @@ async def check_thresholds(context: ContextTypes.DEFAULT_TYPE):
         text=text,
         parse_mode="Markdown",
     )
+
+    for chunk in format_process_chunks(metrics["processes"]):
+        await context.bot.send_message(
+            chat_id=config.TELEGRAM_CHAT_ID,
+            text=chunk,
+            parse_mode="Markdown",
+        )
 
 
 async def post_init(application: Application):
