@@ -72,7 +72,6 @@ def format_status_report(metrics):
 
 
 if __name__ == "__main__":
-    import config
     from metrics import get_all_metrics
 
     metrics = get_all_metrics()
@@ -84,8 +83,8 @@ if __name__ == "__main__":
     print()
     for chunk in format_process_chunks(
         metrics["project_processes"],
-        f"📁 Processi in {config.PROJECTS_DIR}",
-        empty_message="nessun processo attivo in questa cartella",
+        "📁 Processi progetti",
+        empty_message="nessun processo attivo",
     ):
         print(chunk)
         print(f"--- ({len(chunk)} caratteri) ---")

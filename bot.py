@@ -37,8 +37,8 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     for chunk in format_process_chunks(
         metrics["project_processes"],
-        f"📁 Processi in {config.PROJECTS_DIR}",
-        empty_message="nessun processo attivo in questa cartella",
+        "📁 Processi progetti",
+        empty_message="nessun processo attivo",
     ):
         try:
             await update.message.reply_text(chunk)
@@ -111,8 +111,8 @@ async def check_thresholds(context: ContextTypes.DEFAULT_TYPE):
 
     for chunk in format_process_chunks(
         metrics["project_processes"],
-        f"📁 Processi in {config.PROJECTS_DIR}",
-        empty_message="nessun processo attivo in questa cartella",
+        "📁 Processi progetti",
+        empty_message="nessun processo attivo",
     ):
         try:
             await context.bot.send_message(chat_id=config.TELEGRAM_CHAT_ID, text=chunk)
