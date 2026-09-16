@@ -1,11 +1,9 @@
 import time
 import psutil
 
-_last_net_check = {
-    "time": time.time(),
-    "bytes_sent": psutil.net_io_counters().bytes_sent,
-    "bytes_recv": psutil.net_io_counters().bytes_recv,
-}
+import config
+
+_process_registry = {}
 
 
 def get_cpu_usage():
@@ -46,27 +44,42 @@ def get_uptime():
     }
 
 
-def get_network_usage():
-    global _last_net_check
+def get_top_processes(limit=None):
+    if limit is None:
+        limit = config.TOP_PROCESSES_COUNT
 
-    current = psutil.net_io_counters()
-    now = time.time()
+    current_pids = set(psutil.pids())
+    for pid in list(_process_registry.keys()):
+        if pid not in current_pids:
+            del _process_registry[pid]
 
-    elapsed_seconds = now - _last_net_check["time"]
-    sent_mb = (current.bytes_sent - _last_net_check["bytes_sent"]) / (1024 ** 2)
-    recv_mb = (current.bytes_recv - _last_net_check["bytes_recv"]) / (1024 ** 2)
+    for pid in current_pids:
+        if pid not in _process_registry:
+            try:
+                proc = psutil.Process(pid)
+                proc.cpu_percent(None)
+                _process_registry[pid] = proc
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                continue
 
-    _last_net_check = {
-        "time": now,
-        "bytes_sent": current.bytes_sent,
-        "bytes_recv": current.bytes_recv,
-    }
+    results = []
+    for proc in _process_registry.values():
+        try:
+            cpu_percent = proc.cpu_percent(None)
+            ram_percent = proc.memory_percent()
+            ram_mb = proc.memory_info().rss / (1024 ** 2)
+            results.append({
+                "name": proc.name(),
+                "pid": proc.pid,
+                "cpu_percent": round(cpu_percent, 1),
+                "ram_percent": round(ram_percent, 1),
+                "ram_mb": round(ram_mb, 1),
+            })
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            continue
 
-    return {
-        "sent_mb": round(sent_mb, 2),
-        "recv_mb": round(recv_mb, 2),
-        "elapsed_minutes": round(elapsed_seconds / 60, 1),
-    }
+    results.sort(key=lambda p: p["cpu_percent"] + p["ram_percent"], reverse=True)
+    return results[:limit]
 
 
 def get_all_metrics():
@@ -75,7 +88,7 @@ def get_all_metrics():
         "ram": get_ram_usage(),
         "disk": get_disk_usage(),
         "uptime": get_uptime(),
-        "network": get_network_usage(),
+        "top_processes": get_top_processes(),
     }
 
 
