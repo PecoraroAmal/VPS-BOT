@@ -17,9 +17,12 @@ def format_uptime(uptime):
     return " ".join(parts)
 
 
-def format_process_chunks(processes, max_chars=3500):
+def format_process_chunks(processes, title, empty_message="nessun processo trovato", max_chars=3500):
+    """Testo semplice, senza Markdown: i nomi dei processi sono arbitrari
+    e possono contenere caratteri (_, *, `, [) che romperebbero il parsing
+    Markdown di Telegram e farebbero fallire l'invio del messaggio."""
     if not processes:
-        return ["🧠 *Tutti i processi*: dati in fase di calcolo"]
+        return [f"{title}: {empty_message}"]
 
     lines = [
         f"{i}. {proc['name']} — CPU {proc['cpu_percent']}% / "
@@ -43,7 +46,7 @@ def format_process_chunks(processes, max_chars=3500):
     total = len(raw_chunks)
     chunks = []
     for i, chunk_lines in enumerate(raw_chunks, start=1):
-        header = "🧠 *Tutti i processi*" if total == 1 else f"🧠 *Tutti i processi (parte {i}/{total})*"
+        header = title if total == 1 else f"{title} (parte {i}/{total})"
         chunks.append(header + "\n" + "\n".join(chunk_lines))
 
     return chunks
@@ -67,11 +70,20 @@ def format_status_report(metrics):
 
 
 if __name__ == "__main__":
+    import config
     from metrics import get_all_metrics
 
     metrics = get_all_metrics()
     print(format_status_report(metrics))
     print()
-    for chunk in format_process_chunks(metrics["processes"]):
+    for chunk in format_process_chunks(metrics["top_processes"], "🏆 Top 5 processi per consumo"):
+        print(chunk)
+        print(f"--- ({len(chunk)} caratteri) ---")
+    print()
+    for chunk in format_process_chunks(
+        metrics["project_processes"],
+        f"📁 Processi in {config.PROJECTS_DIR}",
+        empty_message="nessun processo attivo in questa cartella",
+    ):
         print(chunk)
         print(f"--- ({len(chunk)} caratteri) ---")

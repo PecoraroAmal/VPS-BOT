@@ -1,5 +1,8 @@
+import os
 import time
 import psutil
+
+import config
 
 _process_registry = {}
 
@@ -63,12 +66,22 @@ def get_all_processes():
             cpu_percent = proc.cpu_percent(None)
             ram_percent = proc.memory_percent()
             ram_mb = proc.memory_info().rss / (1024 ** 2)
+            try:
+                cwd = proc.cwd()
+            except (psutil.AccessDenied, psutil.NoSuchProcess, psutil.ZombieProcess):
+                cwd = None
+            try:
+                cmdline = proc.cmdline()
+            except (psutil.AccessDenied, psutil.NoSuchProcess, psutil.ZombieProcess):
+                cmdline = []
             results.append({
                 "name": proc.name(),
                 "pid": proc.pid,
                 "cpu_percent": round(cpu_percent, 1),
                 "ram_percent": round(ram_percent, 1),
                 "ram_mb": round(ram_mb, 1),
+                "cwd": cwd,
+                "cmdline": cmdline,
             })
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             continue
@@ -77,13 +90,37 @@ def get_all_processes():
     return results
 
 
+def get_top_processes(processes, limit=None):
+    if limit is None:
+        limit = config.TOP_PROCESSES_COUNT
+    return processes[:limit]
+
+
+def _process_in_dir(proc, dir_path):
+    cwd = proc.get("cwd")
+    if cwd and (cwd == dir_path or cwd.startswith(dir_path + os.sep)):
+        return True
+    for arg in proc.get("cmdline") or []:
+        if arg.startswith(dir_path):
+            return True
+    return False
+
+
+def get_project_processes(processes, projects_dir=None):
+    if projects_dir is None:
+        projects_dir = config.PROJECTS_DIR
+    return [p for p in processes if _process_in_dir(p, projects_dir)]
+
+
 def get_all_metrics():
+    processes = get_all_processes()
     return {
         "cpu_percent": get_cpu_usage(),
         "ram": get_ram_usage(),
         "disk": get_disk_usage(),
         "uptime": get_uptime(),
-        "processes": get_all_processes(),
+        "top_processes": get_top_processes(processes),
+        "project_processes": get_project_processes(processes),
     }
 
 

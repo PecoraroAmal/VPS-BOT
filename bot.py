@@ -29,8 +29,21 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = format_status_report(metrics)
     await update.message.reply_text(message, parse_mode="Markdown")
 
-    for chunk in format_process_chunks(metrics["processes"]):
-        await update.message.reply_text(chunk, parse_mode="Markdown")
+    for chunk in format_process_chunks(metrics["top_processes"], "🏆 Top 5 processi per consumo"):
+        try:
+            await update.message.reply_text(chunk)
+        except Exception as e:
+            logger.warning(f"Impossibile inviare un blocco del top 5 processi: {e}")
+
+    for chunk in format_process_chunks(
+        metrics["project_processes"],
+        f"📁 Processi in {config.PROJECTS_DIR}",
+        empty_message="nessun processo attivo in questa cartella",
+    ):
+        try:
+            await update.message.reply_text(chunk)
+        except Exception as e:
+            logger.warning(f"Impossibile inviare un blocco dei processi in progetti: {e}")
 
     try:
         await update.message.delete()
@@ -90,12 +103,21 @@ async def check_thresholds(context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown",
     )
 
-    for chunk in format_process_chunks(metrics["processes"]):
-        await context.bot.send_message(
-            chat_id=config.TELEGRAM_CHAT_ID,
-            text=chunk,
-            parse_mode="Markdown",
-        )
+    for chunk in format_process_chunks(metrics["top_processes"], "🏆 Top 5 processi per consumo"):
+        try:
+            await context.bot.send_message(chat_id=config.TELEGRAM_CHAT_ID, text=chunk)
+        except Exception as e:
+            logger.warning(f"Impossibile inviare un blocco del top 5 processi: {e}")
+
+    for chunk in format_process_chunks(
+        metrics["project_processes"],
+        f"📁 Processi in {config.PROJECTS_DIR}",
+        empty_message="nessun processo attivo in questa cartella",
+    ):
+        try:
+            await context.bot.send_message(chat_id=config.TELEGRAM_CHAT_ID, text=chunk)
+        except Exception as e:
+            logger.warning(f"Impossibile inviare un blocco dei processi in progetti: {e}")
 
 
 async def post_init(application: Application):
