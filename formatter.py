@@ -24,11 +24,13 @@ def format_process_chunks(processes, title, empty_message="nessun processo trova
     if not processes:
         return [f"{title}: {empty_message}"]
 
-    lines = [
-        f"{i}. {proc['name']} — CPU {proc['cpu_percent']}% / "
-        f"RAM {proc['ram_percent']}% ({proc['ram_mb']} MB)"
-        for i, proc in enumerate(processes, start=1)
-    ]
+    lines = []
+    for i, proc in enumerate(processes, start=1):
+        label = f"{proc['project']} ({proc['name']})" if "project" in proc else proc["name"]
+        lines.append(
+            f"{i}. {label} — CPU {proc['cpu_percent']}% / "
+            f"RAM {proc['ram_percent']}% ({proc['ram_mb']} MB)"
+        )
 
     raw_chunks = []
     current = []

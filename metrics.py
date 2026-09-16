@@ -96,20 +96,30 @@ def get_top_processes(processes, limit=None):
     return processes[:limit]
 
 
-def _process_in_dir(proc, dir_path):
+def _project_name(proc, dir_path):
+    prefix = dir_path + os.sep
+
     cwd = proc.get("cwd")
-    if cwd and (cwd == dir_path or cwd.startswith(dir_path + os.sep)):
-        return True
+    if cwd and cwd.startswith(prefix):
+        return cwd[len(prefix):].split(os.sep)[0]
+
     for arg in proc.get("cmdline") or []:
-        if arg.startswith(dir_path):
-            return True
-    return False
+        if arg.startswith(prefix):
+            return arg[len(prefix):].split(os.sep)[0]
+
+    return None
 
 
 def get_project_processes(processes, projects_dir=None):
     if projects_dir is None:
         projects_dir = config.PROJECTS_DIR
-    return [p for p in processes if _process_in_dir(p, projects_dir)]
+
+    results = []
+    for p in processes:
+        project = _project_name(p, projects_dir)
+        if project:
+            results.append({**p, "project": project})
+    return results
 
 
 def get_all_metrics():
